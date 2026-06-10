@@ -1,0 +1,9 @@
+<mujoco model="ur5e pick and place">
+  <!-- Pick-and-place on the floor: the base scene (UR5e + Robotiq 2F-85 + wrist/scene
+       cameras + ground plane) plus the shared object set. The objects rest directly on the
+       floor (surface top at z=0). For the same objects on tables instead, see
+       pick_and_place_tables.xml. Load this file instead of scene.xml for floor-level work,
+       and reset to the "start" keyframe (defined in objects.xml), not "home". -->
+  <include file="scene.xml"/>
+  <include file="objects.xml"/>
+</mujoco>

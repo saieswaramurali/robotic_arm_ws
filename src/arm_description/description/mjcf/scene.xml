@@ -1,0 +1,31 @@
+<mujoco model="ur5e scene">
+  <include file="ur5e.xml"/>
+
+  <statistic center="0.3 0 0.4" extent="0.8"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+    <rgba haze="0.15 0.25 0.35 1"/>
+    <global azimuth="120" elevation="-20"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+      markrgb="0.8 0.8 0.8" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 0 1.5" dir="0 0 -1" directional="true"/>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+
+    <!-- Eye-to-hand (static) RGB-D camera: world-fixed on an elevated 3/4 stand in front
+         of the robot, aimed at the center of the reachable workspace (~0, 0.5, 0.12). It
+         frames the whole table area and the arm reaching into it, so it sees the objects
+         and the gripper picking them. This is the overview camera; the wrist 'wrist_rgbd'
+         camera handles the close-range approach. -->
+    <camera name="scene_rgbd" pos="0.75 1.05 0.75" fovy="55"
+      xyaxes="-0.591 0.806 0 -0.452 -0.332 0.828"/>
+  </worldbody>
+</mujoco>
