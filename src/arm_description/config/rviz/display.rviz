@@ -1,8 +1,0 @@
-Panels:
-  - Class: rviz_common/Displays
-    Name: Displays
-Visualization Manager:
-  Class: ""
-  Displays: []
-  Global Options:
-    Fixed Frame: world
