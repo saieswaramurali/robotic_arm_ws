@@ -8,6 +8,9 @@ controller_manager:
     arm_controller:
       type: joint_trajectory_controller/JointTrajectoryController
 
+    gripper_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
 arm_controller:
   ros__parameters:
     joints:
@@ -17,6 +20,32 @@ arm_controller:
       - wrist_1_joint
       - wrist_2_joint
       - wrist_3_joint
+
+    command_interfaces:
+      - position
+
+    state_interfaces:
+      - position
+      - velocity
+
+    state_publish_rate: 50.0
+    action_monitor_rate: 20.0
+    allow_partial_joints_goal: false
+
+gripper_controller:
+  ros__parameters:
+    joints:
+      - robotiq_palm_finger_1_joint
+      - robotiq_finger_1_joint_1
+      - robotiq_finger_1_joint_2
+      - robotiq_finger_1_joint_3
+      - robotiq_palm_finger_2_joint
+      - robotiq_finger_2_joint_1
+      - robotiq_finger_2_joint_2
+      - robotiq_finger_2_joint_3
+      - robotiq_finger_middle_joint_1
+      - robotiq_finger_middle_joint_2
+      - robotiq_finger_middle_joint_3
 
     command_interfaces:
       - position

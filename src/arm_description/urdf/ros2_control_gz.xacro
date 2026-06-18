@@ -4,9 +4,25 @@
   <xacro:include filename="$(find arm_description)/urdf/inc/ur_joint_control.xacro" />
   <xacro:include filename="$(find arm_description)/urdf/inc/ur_sensors.xacro" />
 
+  <xacro:macro name="gz_position_controlled_joint" params="joint_name">
+    <joint name="${joint_name}">
+      <command_interface name="position"/>
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="effort">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+  </xacro:macro>
+
   <xacro:macro name="ur_gz_ros2_control" params="
     name
     tf_prefix
+    gripper_prefix:=robotiq_
     initial_positions:=${dict(shoulder_pan_joint=0.0,shoulder_lift_joint=-1.57,elbow_joint=0.0,wrist_1_joint=-1.57,wrist_2_joint=0.0,wrist_3_joint=0.0)}
     ">
 
@@ -22,6 +38,18 @@
       <xacro:ur_sensors
         tf_prefix="${tf_prefix}"
       />
+
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}palm_finger_1_joint"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_1_joint_1"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_1_joint_2"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_1_joint_3"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}palm_finger_2_joint"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_2_joint_1"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_2_joint_2"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_2_joint_3"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_middle_joint_1"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_middle_joint_2"/>
+      <xacro:gz_position_controlled_joint joint_name="${tf_prefix}${gripper_prefix}finger_middle_joint_3"/>
     </ros2_control>
   </xacro:macro>
 </robot>

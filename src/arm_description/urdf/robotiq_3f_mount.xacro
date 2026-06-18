@@ -1,0 +1,170 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:property name="robotiq_3f_mesh_root" value="file://$(find arm_description)/meshes/vendor/webots_robotiq_3f"/>
+
+  <xacro:macro name="robotiq_3f_finger" params="prefix">
+    <link name="${prefix}link_0">
+      <visual>
+        <origin xyz="0.020 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/visual/link_0.dae"/>
+        </geometry>
+        <material name="robotiq_3f_gray">
+          <color rgba="0.2 0.2 0.2 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0.020 0 0" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/collision/link_0.STL"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.05"/>
+        <inertia ixx="0.00002" ixy="0" ixz="0" iyy="0.00002" iyz="0" izz="0.00002"/>
+      </inertial>
+    </link>
+
+    <link name="${prefix}link_1">
+      <visual>
+        <origin xyz="0.050 -0.028 0" rpy="0 0 -0.52"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/visual/link_1.dae"/>
+        </geometry>
+        <material name="robotiq_3f_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0.050 -0.028 0" rpy="0 0 -0.52"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/collision/link_1.STL"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.15"/>
+        <inertia ixx="0.00008" ixy="0" ixz="0" iyy="0.00008" iyz="0" izz="0.00008"/>
+      </inertial>
+    </link>
+
+    <link name="${prefix}link_2">
+      <visual>
+        <origin xyz="0.039 0 0.0075" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/visual/link_2.dae"/>
+        </geometry>
+        <material name="robotiq_3f_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0.039 0 0.0075" rpy="0 0 0"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/collision/link_2.STL"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.15"/>
+        <inertia ixx="0.00008" ixy="0" ixz="0" iyy="0.00008" iyz="0" izz="0.00008"/>
+      </inertial>
+    </link>
+
+    <link name="${prefix}link_3">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0.52"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/visual/link_3.dae"/>
+        </geometry>
+        <material name="robotiq_3f_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0.52"/>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/collision/link_3.STL"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.05"/>
+        <inertia ixx="0.00002" ixy="0" ixz="0" iyy="0.00002" iyz="0" izz="0.00002"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}joint_1" type="revolute">
+      <parent link="${prefix}link_0"/>
+      <child link="${prefix}link_1"/>
+      <axis xyz="0 0 1"/>
+      <origin xyz="0.020 0 0" rpy="0 0 0"/>
+      <limit lower="0.0495" upper="1.2218" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}joint_2" type="revolute">
+      <parent link="${prefix}link_1"/>
+      <child link="${prefix}link_2"/>
+      <axis xyz="0 0 1"/>
+      <origin xyz="0.050 -0.028 0" rpy="0 0 -0.52"/>
+      <limit lower="0.0" upper="1.5708" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}joint_3" type="revolute">
+      <parent link="${prefix}link_2"/>
+      <child link="${prefix}link_3"/>
+      <axis xyz="0 0 1"/>
+      <origin xyz="0.039 0 0" rpy="0 0 0"/>
+      <limit lower="-1.2217" upper="-0.0523" effort="100" velocity="100"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:macro name="robotiq_3f_mount" params="parent prefix:=robotiq_ *origin">
+    <xacro:robotiq_3f_finger prefix="${prefix}finger_1_"/>
+    <xacro:robotiq_3f_finger prefix="${prefix}finger_2_"/>
+    <xacro:robotiq_3f_finger prefix="${prefix}finger_middle_"/>
+
+    <link name="${prefix}palm">
+      <visual>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/visual/palm.dae"/>
+        </geometry>
+        <material name="robotiq_3f_gray"/>
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="${robotiq_3f_mesh_root}/collision/palm.STL"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="1.3"/>
+        <inertia ixx="0.006012" ixy="0.000079" ixz="-0.00024" iyy="0.012892" iyz="0" izz="0.002435"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}palm_finger_1_joint" type="revolute">
+      <parent link="${prefix}palm"/>
+      <child link="${prefix}finger_1_link_0"/>
+      <axis xyz="0 1 0"/>
+      <origin xyz="-0.0455 0.0214 0.036" rpy="0 3.1416 -1.57"/>
+      <limit lower="-0.1784" upper="0.192" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}palm_finger_2_joint" type="revolute">
+      <parent link="${prefix}palm"/>
+      <child link="${prefix}finger_2_link_0"/>
+      <axis xyz="0 1 0"/>
+      <origin xyz="-0.0455 0.0214 -0.036" rpy="0 3.1416 -1.57"/>
+      <limit lower="-0.192" upper="0.1784" effort="100" velocity="100"/>
+    </joint>
+
+    <joint name="${prefix}palm_finger_middle_joint" type="fixed">
+      <parent link="${prefix}palm"/>
+      <child link="${prefix}finger_middle_link_0"/>
+      <axis xyz="0 0 1"/>
+      <origin xyz="0.0455 0.0214 0" rpy="0 0 1.57"/>
+    </joint>
+
+    <joint name="${prefix}tool0_palm" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${prefix}palm"/>
+      <xacro:insert_block name="origin"/>
+    </joint>
+  </xacro:macro>
+</robot>

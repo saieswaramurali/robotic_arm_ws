@@ -4,7 +4,7 @@ ROS 2 workspace for a UR5e robot description package.
 
 The current workspace contains:
 
-- `src/arm_description`: UR5e Xacro/URDF description, meshes, RViz config, and launch files for RViz and Gazebo Sim.
+- `src/arm_description`: UR5e Xacro/URDF description, Webots Robotiq 3F gripper, RealSense D435i description assets, meshes, RViz config, and launch files for RViz and Gazebo Sim.
 - `src/arm_ros2_control`: ROS 2 controller configuration.
 - `src/arm_bringup`: Gazebo Sim launch orchestration for the controlled arm.
 
@@ -14,8 +14,9 @@ The current workspace contains:
 - View the UR5e model in RViz with `display.launch.py`.
 - Spawn the same UR5e model into Gazebo Sim with `gazebo.launch.py`.
 - Start Gazebo Sim ROS 2 control with position commands and position/velocity/effort state interfaces.
+- Control the UR5e arm and Webots Robotiq 3F gripper through trajectory controllers.
 
-This workspace does not currently include a real hardware interface, gripper control, MuJoCo scene, or pick-and-place demo.
+This workspace does not currently include a real hardware interface, Gazebo camera sensor topics, MuJoCo scene, or pick-and-place demo.
 
 ## Requirements
 
@@ -71,7 +72,7 @@ Launch Gazebo Sim with ROS 2 control:
 ros2 launch arm_bringup gazebo_control.launch.py
 ```
 
-This spawns the robot in Gazebo Sim, loads `gz_ros2_control`, and starts `joint_state_broadcaster` plus `arm_controller`.
+This spawns the robot in Gazebo Sim, loads `gz_ros2_control`, and starts `joint_state_broadcaster`, `arm_controller`, and `gripper_controller`.
 
 Move the arm:
 
@@ -86,6 +87,14 @@ Observe state:
 ```bash
 ros2 topic echo /joint_states
 ros2 control list_hardware_interfaces
+```
+
+Close the Webots Robotiq 3F gripper:
+
+```bash
+ros2 action send_goal /gripper_controller/follow_joint_trajectory \
+  control_msgs/action/FollowJointTrajectory \
+  "{trajectory: {joint_names: [robotiq_palm_finger_1_joint, robotiq_finger_1_joint_1, robotiq_finger_1_joint_2, robotiq_finger_1_joint_3, robotiq_palm_finger_2_joint, robotiq_finger_2_joint_1, robotiq_finger_2_joint_2, robotiq_finger_2_joint_3, robotiq_finger_middle_joint_1, robotiq_finger_middle_joint_2, robotiq_finger_middle_joint_3], points: [{positions: [0.1, 0.8, 0.8, -0.8, -0.1, 0.8, 0.8, -0.8, 0.8, 0.8, -0.8], time_from_start: {sec: 2}}]}}"
 ```
 
 ## Useful Launch Arguments
@@ -123,15 +132,24 @@ src/arm_description/
 │   ├── display.launch.py
 │   └── gazebo.launch.py
 ├── meshes/
+│   ├── ur5e/
+│   └── vendor/
+│       ├── realsense/
+│       └── webots_robotiq_3f/
 ├── rviz/
 │   └── view_robot.rviz
 └── urdf/
+    ├── realsense_d435i_mount.xacro
+    ├── robotiq_3f_mount.xacro
     ├── ros2_control_mock_hardware.xacro
     ├── ros2_control_gz.xacro
     ├── ur.urdf.xacro
     ├── ur_gz_controlled.urdf.xacro
     ├── ur_macro.xacro
-    └── ur_mocked.urdf.xacro
+    ├── ur_mocked.urdf.xacro
+    └── vendor/
+        ├── realsense/
+        └── webots_robotiq_3f/
 
 src/arm_ros2_control/
 ├── CMakeLists.txt
@@ -151,3 +169,16 @@ src/arm_bringup/
 `gazebo.launch.py` uses `force_abs_paths:=true` when processing the Xacro so Gazebo can resolve mesh files from the installed package path.
 
 `arm_description/gazebo.launch.py` only spawns the visual model. Use `arm_bringup/gazebo_control.launch.py` when you want controllers and joint state feedback from Gazebo.
+
+## Credits And Sources
+
+This workspace vendors or adapts description assets from these upstream projects:
+
+| Asset | Upstream source | License | How it is used |
+| --- | --- | --- | --- |
+| UR5e robot description, config, and meshes | https://github.com/UniversalRobots/Universal_Robots_ROS2_Description and https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver | BSD-3-Clause style ROS-Industrial/Universal Robots licensing upstream | Base UR5e model, meshes, joint limits, physical parameters, and Xacro structure. |
+| Webots Robotiq 3F gripper | https://github.com/cyberbotics/webots_ros2 | Apache-2.0 | Robotiq 3F palm/finger meshes, joint layout, and UR5e gripper reference URDF style. |
+| Intel RealSense D435i description | https://github.com/realsenseai/realsense-ros | Apache-2.0 | D435i/D435 description Xacros, camera mesh, and wrist-camera TF frame structure. |
+| ROS 2 control and Gazebo integration patterns | ROS 2 `ros2_control`, `ros2_controllers`, `gz_ros2_control`, and `ros_gz` packages | Upstream ROS package licenses | Controller manager, trajectory controllers, joint state broadcaster, and Gazebo Sim hardware plugin usage. |
+
+Vendored license files are kept with the copied assets under `src/arm_description/meshes/vendor`. See `doc/assets.md` for the exact paths and notes.

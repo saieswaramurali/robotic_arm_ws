@@ -105,6 +105,13 @@ def generate_launch_description():
         output="screen",
     )
 
+    gripper_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
+        output="screen",
+    )
+
     return LaunchDescription(
         [
             DeclareLaunchArgument("ur_type", default_value="ur5e"),
@@ -150,7 +157,11 @@ def generate_launch_description():
             TimerAction(period=2.0, actions=[spawn_robot]),
             TimerAction(
                 period=5.0,
-                actions=[joint_state_broadcaster_spawner, arm_controller_spawner],
+                actions=[
+                    joint_state_broadcaster_spawner,
+                    arm_controller_spawner,
+                    gripper_controller_spawner,
+                ],
             ),
         ]
     )

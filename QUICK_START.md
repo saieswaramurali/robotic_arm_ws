@@ -68,7 +68,7 @@ xacro install/arm_description/share/arm_description/urdf/ur.urdf.xacro \
 ros2 launch arm_bringup gazebo_control.launch.py
 ```
 
-This starts Gazebo Sim, spawns the robot, loads `gz_ros2_control`, and starts `joint_state_broadcaster` plus `arm_controller`.
+This starts Gazebo Sim, spawns the robot, loads `gz_ros2_control`, and starts `joint_state_broadcaster`, `arm_controller`, and `gripper_controller`.
 
 Move the arm:
 
@@ -85,6 +85,14 @@ ros2 topic echo /joint_states
 ros2 control list_hardware_interfaces
 ```
 
+Close the Webots Robotiq 3F gripper:
+
+```bash
+ros2 action send_goal /gripper_controller/follow_joint_trajectory \
+  control_msgs/action/FollowJointTrajectory \
+  "{trajectory: {joint_names: [robotiq_palm_finger_1_joint, robotiq_finger_1_joint_1, robotiq_finger_1_joint_2, robotiq_finger_1_joint_3, robotiq_palm_finger_2_joint, robotiq_finger_2_joint_1, robotiq_finger_2_joint_2, robotiq_finger_2_joint_3, robotiq_finger_middle_joint_1, robotiq_finger_middle_joint_2, robotiq_finger_middle_joint_3], points: [{positions: [0.1, 0.8, 0.8, -0.8, -0.1, 0.8, 0.8, -0.8, 0.8, 0.8, -0.8], time_from_start: {sec: 2}}]}}"
+```
+
 ## Current Scope
 
 What is available now:
@@ -94,11 +102,12 @@ What is available now:
 - RViz visualization launch
 - Gazebo Sim spawn launch
 - Gazebo Sim ROS 2 control launch with position commands and position/velocity/effort state interfaces
+- Webots Robotiq 3F mesh-based gripper with `gripper_controller`
+- RealSense D435i mesh and wrist-camera TF frames
 
 What is not available yet:
 
 - Real hardware interface
-- Gripper model/control
 - MuJoCo scene or pick-and-place demo
 
-Future: tune Gazebo control gains/dynamics, add real hardware plugin, gripper, then MoveIt.
+Future: tune Gazebo control gains/dynamics, add real hardware plugin, then MoveIt.
