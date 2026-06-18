@@ -8,7 +8,7 @@ Use this guide to build the package, view the robot in RViz, and spawn the same 
 
 ```bash
 cd ~/Desktop/ros_ws/robotic_arm_ws
-colcon build --packages-select arm_description
+colcon build --packages-select arm_description arm_ros2_control arm_bringup
 source install/setup.bash
 ```
 
@@ -62,6 +62,29 @@ xacro install/arm_description/share/arm_description/urdf/ur.urdf.xacro \
   force_abs_paths:=true
 ```
 
+## 5. Gazebo ROS 2 Control
+
+```bash
+ros2 launch arm_bringup gazebo_control.launch.py
+```
+
+This starts Gazebo Sim, spawns the robot, loads `gz_ros2_control`, and starts `joint_state_broadcaster` plus `arm_controller`.
+
+Move the arm:
+
+```bash
+ros2 action send_goal /arm_controller/follow_joint_trajectory \
+  control_msgs/action/FollowJointTrajectory \
+  "{trajectory: {joint_names: [shoulder_pan_joint, shoulder_lift_joint, elbow_joint, wrist_1_joint, wrist_2_joint, wrist_3_joint], points: [{positions: [0.5, -1.2, 0.8, -1.4, 0.4, 0.0], time_from_start: {sec: 3}}]}}"
+```
+
+Observe state:
+
+```bash
+ros2 topic echo /joint_states
+ros2 control list_hardware_interfaces
+```
+
 ## Current Scope
 
 What is available now:
@@ -70,12 +93,12 @@ What is available now:
 - UR5e meshes and config files
 - RViz visualization launch
 - Gazebo Sim spawn launch
+- Gazebo Sim ROS 2 control launch with position commands and position/velocity/effort state interfaces
 
 What is not available yet:
 
-- Gazebo joint control
-- Controller manager launch for Gazebo
+- Real hardware interface
 - Gripper model/control
 - MuJoCo scene or pick-and-place demo
 
-The next step for control is adding a Gazebo-compatible `ros2_control` setup and controller configuration.
+Future: tune Gazebo control gains/dynamics, add real hardware plugin, gripper, then MoveIt.

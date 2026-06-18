@@ -7,10 +7,8 @@
     ">
     <joint name="${tf_prefix}shoulder_pan_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['shoulder_pan_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
@@ -22,10 +20,8 @@
     </joint>
     <joint name="${tf_prefix}shoulder_lift_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['shoulder_lift_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
@@ -37,10 +33,8 @@
     </joint>
     <joint name="${tf_prefix}elbow_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['elbow_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
@@ -52,10 +46,8 @@
     </joint>
     <joint name="${tf_prefix}wrist_1_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['wrist_1_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
@@ -67,10 +59,8 @@
     </joint>
     <joint name="${tf_prefix}wrist_2_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['wrist_2_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
@@ -82,10 +72,8 @@
     </joint>
     <joint name="${tf_prefix}wrist_3_joint">
       <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <command_interface name="effort"/>
       <state_interface name="position">
-        <!-- initial position for the mock system and simulation -->
+        <!-- initial position for simulation/control startup -->
         <param name="initial_value">${initial_positions['wrist_3_joint']}</param>
       </state_interface>
       <state_interface name="velocity">
