@@ -141,14 +141,36 @@ def generate_launch_description():
     arm_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["arm_controller", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "arm_controller",
+            "--controller-manager",
+            "/controller_manager",
+            "--inactive",
+        ],
         output="screen",
     )
 
     gripper_controller_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
+        arguments=[
+            "gripper_controller",
+            "--controller-manager",
+            "/controller_manager",
+            "--inactive",
+        ],
+        output="screen",
+    )
+
+    position_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "arm_position_controller",
+            "gripper_position_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
         output="screen",
     )
 
@@ -305,6 +327,7 @@ def generate_launch_description():
                     joint_state_broadcaster_spawner,
                     arm_controller_spawner,
                     gripper_controller_spawner,
+                    position_controller_spawner,
                 ],
             ),
             TimerAction(

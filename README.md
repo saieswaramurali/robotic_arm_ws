@@ -14,8 +14,9 @@ The current workspace contains:
 - View the UR5e model in RViz with `display.launch.py`.
 - Spawn the same UR5e model into Gazebo Sim with `gazebo.launch.py`.
 - Start Gazebo Sim ROS 2 control with position commands and position/velocity/effort state interfaces.
-- Control the UR5e arm and Webots Robotiq 3F gripper through trajectory controllers.
-- Read simulated wrist-camera RGB and depth images from Gazebo Sim.
+- Control the UR5e arm and Webots Robotiq 3F gripper through direct position controllers by default.
+- Keep trajectory controllers available as inactive controllers for later switching.
+- Read simulated wrist-camera RGB, depth image, camera info, and depth point cloud topics from Gazebo Sim.
 
 This workspace does not currently include a real hardware interface, MuJoCo scene, or pick-and-place demo.
 
@@ -25,11 +26,16 @@ The launch files expect a ROS 2 Humble environment with these packages available
 
 - `xacro`
 - `robot_state_publisher`
+- `joint_state_publisher`
 - `joint_state_publisher_gui`
 - `rviz2`
 - `ros_gz_sim`
+- `ros_gz_bridge`
 - `ros2_control`
 - `ros2_controllers`
+- `gz_ros2_control`
+- `forward_command_controller`
+- `tf2_ros`
 
 ## Build
 
@@ -63,7 +69,7 @@ Optional spawn pose:
 ros2 launch arm_description gazebo.launch.py x:=0.5 y:=0.0 z:=0.0 yaw:=1.57
 ```
 
-By default, Gazebo starts with `empty.sdf` and the robot is spawned from `/robot_description`.
+By default, Gazebo starts with `arm_description/worlds/arm_camera.sdf`, which includes the Gazebo Sensors system needed for camera topics. The robot is spawned from `/robot_description`.
 
 ## Gazebo ROS 2 Control
 
@@ -73,14 +79,29 @@ Launch Gazebo Sim with ROS 2 control:
 ros2 launch arm_bringup gazebo_control.launch.py
 ```
 
-This spawns the robot in Gazebo Sim, loads `gz_ros2_control`, and starts `joint_state_broadcaster`, `arm_controller`, and `gripper_controller`.
+This spawns the robot in Gazebo Sim, loads `gz_ros2_control`, and starts `joint_state_broadcaster`, `arm_position_controller`, and `gripper_position_controller`.
 
-Move the arm:
+The trajectory controllers are still loaded, but inactive by default:
 
 ```bash
-ros2 action send_goal /arm_controller/follow_joint_trajectory \
-  control_msgs/action/FollowJointTrajectory \
-  "{trajectory: {joint_names: [shoulder_pan_joint, shoulder_lift_joint, elbow_joint, wrist_1_joint, wrist_2_joint, wrist_3_joint], points: [{positions: [0.5, -1.2, 0.8, -1.4, 0.4, 0.0], time_from_start: {sec: 3}}]}}"
+ros2 control list_controllers
+```
+
+Expected controller state:
+
+```text
+joint_state_broadcaster          active
+arm_position_controller          active
+gripper_position_controller      active
+arm_controller                   inactive
+gripper_controller               inactive
+```
+
+Move the arm with direct joint-position commands:
+
+```bash
+ros2 topic pub /arm_position_controller/commands std_msgs/msg/Float64MultiArray \
+  "{data: [0.3, -1.1, 0.8, -1.4, 0.4, 0.0]}"
 ```
 
 Observe state:
@@ -88,6 +109,44 @@ Observe state:
 ```bash
 ros2 topic echo /joint_states
 ros2 control list_hardware_interfaces
+```
+
+Gripper command joint order:
+
+```text
+[robotiq_palm_finger_1_joint, robotiq_finger_1_joint_1, robotiq_finger_1_joint_2, robotiq_finger_1_joint_3,
+ robotiq_palm_finger_2_joint, robotiq_finger_2_joint_1, robotiq_finger_2_joint_2, robotiq_finger_2_joint_3,
+ robotiq_finger_middle_joint_1, robotiq_finger_middle_joint_2, robotiq_finger_middle_joint_3]
+```
+
+Closed-ish gripper position:
+
+```bash
+ros2 topic pub /gripper_position_controller/commands std_msgs/msg/Float64MultiArray \
+  "{data: [0.1, 0.8, 0.8, -0.8, -0.1, 0.8, 0.8, -0.8, 0.8, 0.8, -0.8]}"
+```
+
+Open-ish gripper position:
+
+```bash
+ros2 topic pub /gripper_position_controller/commands std_msgs/msg/Float64MultiArray \
+  "{data: [0.0, 0.05, 0.05, -0.05, 0.0, 0.05, 0.05, -0.05, 0.05, 0.05, -0.05]}"
+```
+
+Switch to trajectory controllers when needed:
+
+```bash
+ros2 control switch_controllers \
+  --deactivate arm_position_controller gripper_position_controller \
+  --activate arm_controller gripper_controller
+```
+
+Switch back to direct position controllers:
+
+```bash
+ros2 control switch_controllers \
+  --deactivate arm_controller gripper_controller \
+  --activate arm_position_controller gripper_position_controller
 ```
 
 View the simulated wrist camera:
@@ -102,13 +161,17 @@ Camera topics:
 ros2 topic list | grep wrist_camera
 ```
 
-Close the Webots Robotiq 3F gripper:
+Useful camera topics:
 
-```bash
-ros2 action send_goal /gripper_controller/follow_joint_trajectory \
-  control_msgs/action/FollowJointTrajectory \
-  "{trajectory: {joint_names: [robotiq_palm_finger_1_joint, robotiq_finger_1_joint_1, robotiq_finger_1_joint_2, robotiq_finger_1_joint_3, robotiq_palm_finger_2_joint, robotiq_finger_2_joint_1, robotiq_finger_2_joint_2, robotiq_finger_2_joint_3, robotiq_finger_middle_joint_1, robotiq_finger_middle_joint_2, robotiq_finger_middle_joint_3], points: [{positions: [0.1, 0.8, 0.8, -0.8, -0.1, 0.8, 0.8, -0.8, 0.8, 0.8, -0.8], time_from_start: {sec: 2}}]}}"
+```text
+/wrist_camera/color/image
+/wrist_camera/color/camera_info
+/wrist_camera/depth/image
+/wrist_camera/depth/camera_info
+/wrist_camera/depth/points
 ```
+
+In RViz, use the `Image` display for `/wrist_camera/color/image` and `PointCloud2` for `/wrist_camera/depth/points`.
 
 ## Useful Launch Arguments
 
@@ -130,7 +193,10 @@ Both RViz and Gazebo launches support:
 - `roll:=0.0`
 - `pitch:=0.0`
 - `yaw:=0.0`
-- `gz_args:="-r empty.sdf"`
+- `gz_args:="-r /path/to/world.sdf"`
+- `bridge_camera:=true`
+- `launch_rviz:=true`
+- `use_sim_time:=true`
 
 ## Package Layout
 
@@ -151,6 +217,8 @@ src/arm_description/
 │       └── webots_robotiq_3f/
 ├── rviz/
 │   └── view_robot.rviz
+├── worlds/
+│   └── arm_camera.sdf
 └── urdf/
     ├── realsense_d435i_mount.xacro
     ├── robotiq_3f_mount.xacro
@@ -181,7 +249,9 @@ src/arm_bringup/
 
 `gazebo.launch.py` uses `force_abs_paths:=true` when processing the Xacro so Gazebo can resolve mesh files from the installed package path.
 
-`arm_description/gazebo.launch.py` only spawns the visual model. Use `arm_bringup/gazebo_control.launch.py` when you want controllers and joint state feedback from Gazebo.
+`arm_description/gazebo.launch.py` spawns the visual model, starts RViz by default, and bridges the wrist camera topics.
+
+Use `arm_bringup/gazebo_control.launch.py` when you want controllers and joint state feedback from Gazebo. It starts direct position controllers by default.
 
 ## Credits And Sources
 
@@ -192,6 +262,6 @@ This workspace vendors or adapts description assets from these upstream projects
 | UR5e robot description, config, and meshes | https://github.com/UniversalRobots/Universal_Robots_ROS2_Description and https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver | BSD-3-Clause style ROS-Industrial/Universal Robots licensing upstream | Base UR5e model, meshes, joint limits, physical parameters, and Xacro structure. |
 | Webots Robotiq 3F gripper | https://github.com/cyberbotics/webots_ros2 | Apache-2.0 | Robotiq 3F palm/finger meshes, joint layout, and UR5e gripper reference URDF style. |
 | Intel RealSense D435i reference files | https://github.com/realsenseai/realsense-ros | Apache-2.0 | Retained reference Xacros and meshes. The active wrist camera is now a simple local RGB-D camera block with Gazebo sensors. |
-| ROS 2 control and Gazebo integration patterns | ROS 2 `ros2_control`, `ros2_controllers`, `gz_ros2_control`, and `ros_gz` packages | Upstream ROS package licenses | Controller manager, trajectory controllers, joint state broadcaster, and Gazebo Sim hardware plugin usage. |
+| ROS 2 control and Gazebo integration patterns | ROS 2 `ros2_control`, `ros2_controllers`, `gz_ros2_control`, and `ros_gz` packages | Upstream ROS package licenses | Controller manager, direct position controllers, trajectory controllers, joint state broadcaster, and Gazebo Sim hardware plugin usage. |
 
 Vendored license files are kept with the copied assets under `src/arm_description/meshes/vendor`. See `doc/assets.md` for the exact paths and notes.
