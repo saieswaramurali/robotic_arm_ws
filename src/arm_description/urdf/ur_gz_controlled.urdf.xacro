@@ -20,6 +20,9 @@
   <xacro:arg name="initial_positions_file" default="$(find arm_description)/config/initial_positions.yaml"/>
   <xacro:arg name="controllers_file" default="$(find arm_ros2_control)/config/controllers.yaml"/>
   <xacro:arg name="gripper_prefix" default="robotiq_"/>
+  <xacro:arg name="include_gz_camera_sensors" default="true"/>
+  <xacro:arg name="control_robot_param" default="robot_description"/>
+  <xacro:arg name="control_robot_param_node" default="robot_description_control_server"/>
 
   <xacro:property name="initial_positions_file" default="$(arg initial_positions_file)"/>
 
@@ -46,7 +49,7 @@
   </xacro:robotiq_3f_mount>
 
   <xacro:realsense_d435i_mount parent="$(arg tf_prefix)$(arg gripper_prefix)palm" name="$(arg tf_prefix)wrist_camera">
-    <origin xyz="0 0 0.095" rpy="0 ${-pi/2} 0"/>
+    <origin xyz="-0.020 0.030 0.070" rpy="0 0 ${pi/2}"/>
   </xacro:realsense_d435i_mount>
 
   <xacro:ur_gz_ros2_control
@@ -59,8 +62,12 @@
   <gazebo>
     <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
       <parameters>$(arg controllers_file)</parameters>
-      <robot_param>robot_description</robot_param>
-      <robot_param_node>robot_state_publisher</robot_param_node>
+      <robot_param>$(arg control_robot_param)</robot_param>
+      <robot_param_node>$(arg control_robot_param_node)</robot_param_node>
     </plugin>
   </gazebo>
+
+  <xacro:if value="$(arg include_gz_camera_sensors)">
+    <xacro:realsense_d435i_gz_sensors name="$(arg tf_prefix)wrist_camera"/>
+  </xacro:if>
 </robot>

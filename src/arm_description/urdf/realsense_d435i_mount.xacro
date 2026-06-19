@@ -1,13 +1,159 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:include filename="$(find arm_description)/urdf/vendor/realsense/_d435i.urdf.xacro" />
+  <xacro:macro name="simple_rgbd_camera_mount" params="parent name:=wrist_camera *origin">
+    <link name="${name}_mount_link">
+      <visual>
+        <origin xyz="0 0 0.003" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.050 0.035 0.006"/>
+        </geometry>
+        <material name="${name}_mount_black">
+          <color rgba="0.03 0.03 0.03 1.0"/>
+        </material>
+      </visual>
+      <visual>
+        <origin xyz="-0.020 0 0.035" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.012 0.020 0.070"/>
+        </geometry>
+        <material name="${name}_mount_black"/>
+      </visual>
+      <visual>
+        <origin xyz="0 0 0.072" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.080 0.038 0.006"/>
+        </geometry>
+        <material name="${name}_mount_black"/>
+      </visual>
+      <inertial>
+        <origin xyz="-0.010 0 0.035" rpy="0 0 0"/>
+        <mass value="0.04"/>
+        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00002" iyz="0" izz="0.00002"/>
+      </inertial>
+    </link>
 
-  <xacro:macro name="realsense_d435i_mount" params="parent name:=wrist_camera *origin">
-    <xacro:sensor_d435i
-      parent="${parent}"
-      name="${name}"
-      use_nominal_extrinsics="true">
+    <joint name="${name}_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="${name}_mount_link"/>
       <xacro:insert_block name="origin" />
-    </xacro:sensor_d435i>
+    </joint>
+
+    <link name="${name}_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.060 0.030 0.028"/>
+        </geometry>
+        <material name="${name}_body_dark">
+          <color rgba="0.02 0.02 0.02 1.0"/>
+        </material>
+      </visual>
+      <visual>
+        <origin xyz="0.031 0 0" rpy="0 1.5708 0"/>
+        <geometry>
+          <cylinder radius="0.010" length="0.004"/>
+        </geometry>
+        <material name="${name}_lens_blue">
+          <color rgba="0.1 0.35 0.75 1.0"/>
+        </material>
+      </visual>
+      <visual>
+        <origin xyz="0.034 0 0" rpy="0 1.5708 0"/>
+        <geometry>
+          <cylinder radius="0.004" length="0.003"/>
+        </geometry>
+        <material name="${name}_lens_glass">
+          <color rgba="0.65 0.85 1.0 0.85"/>
+        </material>
+      </visual>
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="0.07"/>
+        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00003" iyz="0" izz="0.00003"/>
+      </inertial>
+    </link>
+
+    <joint name="${name}_joint" type="fixed">
+      <parent link="${name}_mount_link"/>
+      <child link="${name}_link"/>
+      <origin xyz="0.005 0 0.096" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${name}_depth_frame"/>
+    <joint name="${name}_depth_joint" type="fixed">
+      <parent link="${name}_link"/>
+      <child link="${name}_depth_frame"/>
+      <origin xyz="0.032 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${name}_depth_optical_frame"/>
+    <joint name="${name}_depth_optical_joint" type="fixed">
+      <parent link="${name}_depth_frame"/>
+      <child link="${name}_depth_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+
+    <link name="${name}_color_frame"/>
+    <joint name="${name}_color_joint" type="fixed">
+      <parent link="${name}_link"/>
+      <child link="${name}_color_frame"/>
+      <origin xyz="0.032 0.012 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${name}_color_optical_frame"/>
+    <joint name="${name}_color_optical_joint" type="fixed">
+      <parent link="${name}_color_frame"/>
+      <child link="${name}_color_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- Backwards-compatible macro name used by the URDF entrypoints. -->
+  <xacro:macro name="realsense_d435i_mount" params="parent name:=wrist_camera *origin">
+    <xacro:simple_rgbd_camera_mount parent="${parent}" name="${name}">
+      <xacro:insert_block name="origin" />
+    </xacro:simple_rgbd_camera_mount>
+  </xacro:macro>
+
+  <xacro:macro name="realsense_d435i_gz_sensors" params="name:=wrist_camera">
+    <gazebo reference="${name}_link">
+      <sensor name="${name}_color_sensor" type="camera">
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <topic>/${name}/color</topic>
+        <gz_frame_id>${name}_color_optical_frame</gz_frame_id>
+        <camera>
+          <horizontal_fov>1.211</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>10.0</far>
+          </clip>
+        </camera>
+      </sensor>
+
+      <sensor name="${name}_depth_sensor" type="depth_camera">
+        <always_on>true</always_on>
+        <update_rate>15</update_rate>
+        <topic>/${name}/depth</topic>
+        <gz_frame_id>${name}_depth_optical_frame</gz_frame_id>
+        <camera>
+          <horizontal_fov>1.211</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R_FLOAT32</format>
+          </image>
+          <clip>
+            <near>0.05</near>
+            <far>10.0</far>
+          </clip>
+        </camera>
+      </sensor>
+    </gazebo>
   </xacro:macro>
 </robot>
