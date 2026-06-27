@@ -1,6 +1,6 @@
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, EnvironmentVariable, FindExecutable, LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -26,6 +26,7 @@ def generate_launch_description():
     yaw = LaunchConfiguration("yaw")
     bridge_camera = LaunchConfiguration("bridge_camera")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    use_trajectory_controllers = LaunchConfiguration("use_trajectory_controllers")
     use_sim_time_param = ParameterValue(use_sim_time, value_type=bool)
 
     robot_description_content = Command(
@@ -138,7 +139,31 @@ def generate_launch_description():
         output="screen",
     )
 
-    arm_controller_spawner = Node(
+    arm_controller_spawner_active = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "arm_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
+        condition=IfCondition(use_trajectory_controllers),
+    )
+
+    gripper_controller_spawner_active = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "gripper_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
+        condition=IfCondition(use_trajectory_controllers),
+    )
+
+    arm_controller_spawner_inactive = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[
@@ -148,9 +173,10 @@ def generate_launch_description():
             "--inactive",
         ],
         output="screen",
+        condition=UnlessCondition(use_trajectory_controllers),
     )
 
-    gripper_controller_spawner = Node(
+    gripper_controller_spawner_inactive = Node(
         package="controller_manager",
         executable="spawner",
         arguments=[
@@ -160,6 +186,7 @@ def generate_launch_description():
             "--inactive",
         ],
         output="screen",
+        condition=UnlessCondition(use_trajectory_controllers),
     )
 
     position_controller_spawner = Node(
@@ -172,6 +199,7 @@ def generate_launch_description():
             "/controller_manager",
         ],
         output="screen",
+        condition=UnlessCondition(use_trajectory_controllers),
     )
 
     camera_bridge = Node(
@@ -281,6 +309,7 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument("bridge_camera", default_value="true"),
             DeclareLaunchArgument("use_sim_time", default_value="true"),
+            DeclareLaunchArgument("use_trajectory_controllers", default_value="false"),
             DeclareLaunchArgument(
                 "description_file",
                 default_value=PathJoinSubstitution(
@@ -325,8 +354,10 @@ def generate_launch_description():
                 period=5.0,
                 actions=[
                     joint_state_broadcaster_spawner,
-                    arm_controller_spawner,
-                    gripper_controller_spawner,
+                    arm_controller_spawner_active,
+                    gripper_controller_spawner_active,
+                    arm_controller_spawner_inactive,
+                    gripper_controller_spawner_inactive,
                     position_controller_spawner,
                 ],
             ),
