@@ -1,0 +1,247 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:macro name="box_inertial" params="mass x y z">
+    <inertial>
+      <mass value="${mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+        ixx="${mass * (y * y + z * z) / 12.0}"
+        ixy="0"
+        ixz="0"
+        iyy="${mass * (x * x + z * z) / 12.0}"
+        iyz="0"
+        izz="${mass * (x * x + y * y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertial_z" params="mass radius length">
+    <inertial>
+      <mass value="${mass}"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+        ixx="${mass * (3.0 * radius * radius + length * length) / 12.0}"
+        ixy="0"
+        ixz="0"
+        iyy="${mass * (3.0 * radius * radius + length * length) / 12.0}"
+        iyz="0"
+        izz="${mass * radius * radius / 2.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <xacro:macro name="mobile_diff_base" params="
+    prefix:=''
+    base_length:=0.90
+    base_width:=0.62
+    base_height:=0.28
+    ground_clearance:=0.04
+    wheel_radius:=0.12
+    wheel_width:=0.06
+    wheel_base:=0.56
+    wheel_separation:=0.68
+    ">
+
+    <material name="${prefix}dark_gray">
+      <color rgba="0.12 0.13 0.14 1.0"/>
+    </material>
+    <material name="${prefix}blue">
+      <color rgba="0.05 0.28 0.58 1.0"/>
+    </material>
+    <material name="${prefix}black">
+      <color rgba="0.02 0.02 0.02 1.0"/>
+    </material>
+
+    <link name="${prefix}base_footprint"/>
+
+    <link name="${prefix}base_link">
+      <visual>
+        <origin xyz="0 0 ${wheel_radius + ground_clearance + base_height / 2.0}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+        <material name="${prefix}blue"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${wheel_radius + ground_clearance + base_height / 2.0}" rpy="0 0 0"/>
+        <geometry>
+          <box size="${base_length} ${base_width} ${base_height}"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial mass="45.0" x="${base_length}" y="${base_width}" z="${base_height}"/>
+    </link>
+
+    <joint name="${prefix}base_footprint_joint" type="fixed">
+      <parent link="${prefix}base_footprint"/>
+      <child link="${prefix}base_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}base_top_link">
+      <visual>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.42 0.42 0.05"/>
+        </geometry>
+        <material name="${prefix}dark_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0.025" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.42 0.42 0.05"/>
+        </geometry>
+      </collision>
+      <xacro:box_inertial mass="8.0" x="0.42" y="0.42" z="0.05"/>
+    </link>
+
+    <joint name="${prefix}base_top_joint" type="fixed">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}base_top_link"/>
+      <origin xyz="0 0 ${wheel_radius + ground_clearance + base_height}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}front_left_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="${prefix}black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+    </link>
+
+    <link name="${prefix}front_right_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="${prefix}black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+    </link>
+
+    <link name="${prefix}rear_left_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="${prefix}black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+    </link>
+
+    <link name="${prefix}rear_right_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="${prefix}black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi / 2.0} 0 0"/>
+        <geometry>
+          <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+    </link>
+
+    <joint name="${prefix}front_left_wheel_joint" type="continuous">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}front_left_wheel_link"/>
+      <origin xyz="${wheel_base / 2.0} ${wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="${prefix}front_right_wheel_joint" type="continuous">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}front_right_wheel_link"/>
+      <origin xyz="${wheel_base / 2.0} ${-wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="${prefix}rear_left_wheel_joint" type="continuous">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}rear_left_wheel_link"/>
+      <origin xyz="${-wheel_base / 2.0} ${wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <joint name="${prefix}rear_right_wheel_joint" type="continuous">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}rear_right_wheel_link"/>
+      <origin xyz="${-wheel_base / 2.0} ${-wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <gazebo reference="${prefix}base_link">
+      <material>Gazebo/Blue</material>
+      <self_collide>true</self_collide>
+    </gazebo>
+    <gazebo reference="${prefix}base_top_link">
+      <material>Gazebo/DarkGrey</material>
+      <self_collide>true</self_collide>
+    </gazebo>
+    <gazebo reference="${prefix}front_left_wheel_link">
+      <material>Gazebo/Black</material>
+      <self_collide>true</self_collide>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+    <gazebo reference="${prefix}front_right_wheel_link">
+      <material>Gazebo/Black</material>
+      <self_collide>true</self_collide>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+    <gazebo reference="${prefix}rear_left_wheel_link">
+      <material>Gazebo/Black</material>
+      <self_collide>true</self_collide>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+    <gazebo reference="${prefix}rear_right_wheel_link">
+      <material>Gazebo/Black</material>
+      <self_collide>true</self_collide>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+
+    <gazebo>
+      <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+        <left_joint>${prefix}front_left_wheel_joint</left_joint>
+        <left_joint>${prefix}rear_left_wheel_joint</left_joint>
+        <right_joint>${prefix}front_right_wheel_joint</right_joint>
+        <right_joint>${prefix}rear_right_wheel_joint</right_joint>
+        <wheel_separation>${wheel_separation}</wheel_separation>
+        <wheel_radius>${wheel_radius}</wheel_radius>
+        <odom_publish_frequency>50</odom_publish_frequency>
+        <topic>cmd_vel</topic>
+        <odom_topic>odom</odom_topic>
+        <tf_topic>tf</tf_topic>
+        <frame_id>odom</frame_id>
+        <child_frame_id>${prefix}base_footprint</child_frame_id>
+      </plugin>
+    </gazebo>
+  </xacro:macro>
+</robot>

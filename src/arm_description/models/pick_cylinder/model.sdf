@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="pick_cylinder">
+    <static>false</static>
+    <pose>0 0 0.06 0 0 0</pose>
+    <link name="link">
+      <inertial>
+        <mass>0.08</mass>
+        <inertia>
+          <ixx>0.00012</ixx>
+          <iyy>0.00012</iyy>
+          <izz>0.00005</izz>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyz>0</iyz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <surface>
+          <friction>
+            <ode>
+              <mu>1.5</mu>
+              <mu2>1.5</mu2>
+            </ode>
+          </friction>
+        </surface>
+        <geometry>
+          <cylinder>
+            <radius>0.035</radius>
+            <length>0.12</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <cylinder>
+            <radius>0.035</radius>
+            <length>0.12</length>
+          </cylinder>
+        </geometry>
+        <material>
+          <ambient>0.9 0.15 0.05 1</ambient>
+          <diffuse>0.9 0.15 0.05 1</diffuse>
+          <specular>0.2 0.2 0.2 1</specular>
+        </material>
+      </visual>
+    </link>
+  </model>
+</sdf>

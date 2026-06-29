@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(arm_description)
+project(arm_pick_place)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,10 +7,22 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(arm_interfaces REQUIRED)
+find_package(trajectory_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 
-install(
-  DIRECTORY config launch meshes models rviz urdf worlds
-  DESTINATION share/${PROJECT_NAME}
+add_executable(predefined_pick_place_node src/predefined_pick_place_node.cpp)
+ament_target_dependencies(predefined_pick_place_node
+  rclcpp
+  arm_interfaces
+  trajectory_msgs
+  geometry_msgs
+)
+
+install(TARGETS
+  predefined_pick_place_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

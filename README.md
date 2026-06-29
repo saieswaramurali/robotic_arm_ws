@@ -9,6 +9,7 @@ The current workspace contains:
 - `src/arm_bringup`: Gazebo Sim launch orchestration for the controlled arm.
 - `src/arm_interfaces`: Custom service interfaces for FK, IK, and move-to-pose calls.
 - `src/arm_kinematics`: KDL-based FK, IK, and trajectory planning service node.
+- `src/arm_pick_place`: Predefined pick-and-place task logic for a known cylinder pose.
 
 ## What Works Now
 
@@ -46,7 +47,7 @@ The launch files expect a ROS 2 Humble environment with these packages available
 
 ```bash
 cd ~/Desktop/ros_ws/robotic_arm_ws
-colcon build --packages-select arm_description arm_ros2_control arm_interfaces arm_kinematics arm_bringup
+colcon build --packages-select arm_description arm_ros2_control arm_interfaces arm_kinematics arm_pick_place arm_bringup
 source install/setup.bash
 ```
 
@@ -185,6 +186,26 @@ Useful services:
 /compute_fk
 /solve_ik
 /move_to_pose
+```
+
+## Predefined Cylinder Pick And Place
+
+Launch Gazebo, the KDL motion pipeline, a cylinder object, and the fixed pick-place task:
+
+```bash
+ros2 launch arm_bringup pick_place_cylinder.launch.py
+```
+
+The cylinder starts at:
+
+```text
+x=0.38 y=0.18 z=0.06
+```
+
+The demo keeps a downward tool orientation, descends closer to the cylinder, closes the gripper, lifts, moves slightly to the robot's right side, descends near the table, opens the gripper, and retreats. To spawn the object without running the task:
+
+```bash
+ros2 launch arm_bringup pick_place_cylinder.launch.py run_demo:=false
 ```
 
 View the simulated wrist camera:
