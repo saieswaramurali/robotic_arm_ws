@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
+from rclpy.node import Node
+from slam_toolbox.srv import SaveMap
+
+
+class MapSaver(Node):
+    def __init__(self, map_name):
+        super().__init__("mobile_arm_map_saver")
+        pkg_mobile_arm_nav = get_package_share_directory("mobile_arm_nav")
+        self.maps_dir = os.path.join(pkg_mobile_arm_nav, "maps")
+        self.map_path = os.path.join(self.maps_dir, map_name)
+        self.client = self.create_client(SaveMap, "/slam_toolbox/save_map")
+
+        self.get_logger().info("Waiting for /slam_toolbox/save_map service...")
+        if not self.client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("Service /slam_toolbox/save_map is not available")
+            sys.exit(1)
+
+        request = SaveMap.Request()
+        request.name.data = self.map_path
+        self.get_logger().info(f"Saving map to: {self.map_path}")
+
+        future = self.client.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() is None:
+            self.get_logger().error("Failed to save map")
+            sys.exit(1)
+
+        self.get_logger().info("Map saved")
+        self.get_logger().info(f"Use: ros2 launch mobile_arm_nav localization.launch.py map:={map_name}")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: ros2 run mobile_arm_nav save_map <map_name>")
+        print("Example: ros2 run mobile_arm_nav save_map testbed_map")
+        sys.exit(1)
+
+    rclpy.init()
+    MapSaver(sys.argv[1])
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

@@ -33,11 +33,16 @@
     base_length:=0.90
     base_width:=0.62
     base_height:=0.28
+    base_mass:=70.0
+    base_top_mass:=12.0
     ground_clearance:=0.04
     wheel_radius:=0.12
     wheel_width:=0.06
+    wheel_mass:=3.0
     wheel_base:=0.56
     wheel_separation:=0.68
+    lidar_radius:=0.055
+    lidar_height:=0.08
     ">
 
     <material name="${prefix}dark_gray">
@@ -66,7 +71,7 @@
           <box size="${base_length} ${base_width} ${base_height}"/>
         </geometry>
       </collision>
-      <xacro:box_inertial mass="45.0" x="${base_length}" y="${base_width}" z="${base_height}"/>
+      <xacro:box_inertial mass="${base_mass}" x="${base_length}" y="${base_width}" z="${base_height}"/>
     </link>
 
     <joint name="${prefix}base_footprint_joint" type="fixed">
@@ -89,13 +94,36 @@
           <box size="0.42 0.42 0.05"/>
         </geometry>
       </collision>
-      <xacro:box_inertial mass="8.0" x="0.42" y="0.42" z="0.05"/>
+      <xacro:box_inertial mass="${base_top_mass}" x="0.42" y="0.42" z="0.05"/>
     </link>
 
     <joint name="${prefix}base_top_joint" type="fixed">
       <parent link="${prefix}base_link"/>
       <child link="${prefix}base_top_link"/>
       <origin xyz="0 0 ${wheel_radius + ground_clearance + base_height}" rpy="0 0 0"/>
+    </joint>
+
+    <link name="${prefix}lidar_link">
+      <visual>
+        <origin xyz="0 0 ${lidar_height / 2.0}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${lidar_radius}" length="${lidar_height}"/>
+        </geometry>
+        <material name="${prefix}dark_gray"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${lidar_height / 2.0}" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${lidar_radius}" length="${lidar_height}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertial_z mass="0.4" radius="${lidar_radius}" length="${lidar_height}"/>
+    </link>
+
+    <joint name="${prefix}lidar_joint" type="fixed">
+      <parent link="${prefix}base_link"/>
+      <child link="${prefix}lidar_link"/>
+      <origin xyz="0.32 0 ${wheel_radius + ground_clearance + base_height + 0.05}" rpy="0 0 0"/>
     </joint>
 
     <link name="${prefix}front_left_wheel_link">
@@ -112,7 +140,7 @@
           <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+      <xacro:cylinder_inertial_z mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_width}"/>
     </link>
 
     <link name="${prefix}front_right_wheel_link">
@@ -129,7 +157,7 @@
           <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+      <xacro:cylinder_inertial_z mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_width}"/>
     </link>
 
     <link name="${prefix}rear_left_wheel_link">
@@ -146,7 +174,7 @@
           <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+      <xacro:cylinder_inertial_z mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_width}"/>
     </link>
 
     <link name="${prefix}rear_right_wheel_link">
@@ -163,7 +191,7 @@
           <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
         </geometry>
       </collision>
-      <xacro:cylinder_inertial_z mass="2.0" radius="${wheel_radius}" length="${wheel_width}"/>
+      <xacro:cylinder_inertial_z mass="${wheel_mass}" radius="${wheel_radius}" length="${wheel_width}"/>
     </link>
 
     <joint name="${prefix}front_left_wheel_joint" type="continuous">
@@ -171,6 +199,7 @@
       <child link="${prefix}front_left_wheel_link"/>
       <origin xyz="${wheel_base / 2.0} ${wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
     </joint>
 
     <joint name="${prefix}front_right_wheel_joint" type="continuous">
@@ -178,6 +207,7 @@
       <child link="${prefix}front_right_wheel_link"/>
       <origin xyz="${wheel_base / 2.0} ${-wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
     </joint>
 
     <joint name="${prefix}rear_left_wheel_joint" type="continuous">
@@ -185,6 +215,7 @@
       <child link="${prefix}rear_left_wheel_link"/>
       <origin xyz="${-wheel_base / 2.0} ${wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
     </joint>
 
     <joint name="${prefix}rear_right_wheel_joint" type="continuous">
@@ -192,42 +223,110 @@
       <child link="${prefix}rear_right_wheel_link"/>
       <origin xyz="${-wheel_base / 2.0} ${-wheel_separation / 2.0} ${wheel_radius}" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
+      <dynamics damping="0.05" friction="0.02"/>
     </joint>
 
     <gazebo reference="${prefix}base_link">
       <material>Gazebo/Blue</material>
       <self_collide>true</self_collide>
+      <gravity>true</gravity>
     </gazebo>
     <gazebo reference="${prefix}base_top_link">
       <material>Gazebo/DarkGrey</material>
       <self_collide>true</self_collide>
     </gazebo>
+    <gazebo reference="${prefix}lidar_link">
+      <material>Gazebo/DarkGrey</material>
+      <sensor name="${prefix}lidar" type="gpu_lidar">
+        <pose>0 0 0 0 0 0</pose>
+        <topic>scan</topic>
+        <gz_frame_id>${prefix}lidar_link</gz_frame_id>
+        <update_rate>10</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159</min_angle>
+              <max_angle>3.14159</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.12</min>
+            <max>12.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+        <always_on>true</always_on>
+        <visualize>false</visualize>
+      </sensor>
+    </gazebo>
     <gazebo reference="${prefix}front_left_wheel_link">
       <material>Gazebo/Black</material>
       <self_collide>true</self_collide>
-      <mu1>1.0</mu1>
-      <mu2>1.0</mu2>
+      <mu1>3.0</mu1>
+      <mu2>0.25</mu2>
+      <kp>500000.0</kp>
+      <kd>20.0</kd>
     </gazebo>
     <gazebo reference="${prefix}front_right_wheel_link">
       <material>Gazebo/Black</material>
       <self_collide>true</self_collide>
-      <mu1>1.0</mu1>
-      <mu2>1.0</mu2>
+      <mu1>3.0</mu1>
+      <mu2>0.25</mu2>
+      <kp>500000.0</kp>
+      <kd>20.0</kd>
     </gazebo>
     <gazebo reference="${prefix}rear_left_wheel_link">
       <material>Gazebo/Black</material>
       <self_collide>true</self_collide>
-      <mu1>1.0</mu1>
-      <mu2>1.0</mu2>
+      <mu1>3.0</mu1>
+      <mu2>0.25</mu2>
+      <kp>500000.0</kp>
+      <kd>20.0</kd>
     </gazebo>
     <gazebo reference="${prefix}rear_right_wheel_link">
       <material>Gazebo/Black</material>
       <self_collide>true</self_collide>
-      <mu1>1.0</mu1>
-      <mu2>1.0</mu2>
+      <mu1>3.0</mu1>
+      <mu2>0.25</mu2>
+      <kp>500000.0</kp>
+      <kd>20.0</kd>
     </gazebo>
 
     <gazebo>
+      <plugin filename="gz-sim-wheel-slip-system" name="gz::sim::systems::WheelSlip">
+        <wheel link_name="${prefix}front_left_wheel_link">
+          <slip_compliance_lateral>1.5</slip_compliance_lateral>
+          <slip_compliance_longitudinal>0.02</slip_compliance_longitudinal>
+          <wheel_normal_force>250</wheel_normal_force>
+          <wheel_radius>${wheel_radius}</wheel_radius>
+        </wheel>
+        <wheel link_name="${prefix}front_right_wheel_link">
+          <slip_compliance_lateral>1.5</slip_compliance_lateral>
+          <slip_compliance_longitudinal>0.02</slip_compliance_longitudinal>
+          <wheel_normal_force>250</wheel_normal_force>
+          <wheel_radius>${wheel_radius}</wheel_radius>
+        </wheel>
+        <wheel link_name="${prefix}rear_left_wheel_link">
+          <slip_compliance_lateral>1.5</slip_compliance_lateral>
+          <slip_compliance_longitudinal>0.02</slip_compliance_longitudinal>
+          <wheel_normal_force>250</wheel_normal_force>
+          <wheel_radius>${wheel_radius}</wheel_radius>
+        </wheel>
+        <wheel link_name="${prefix}rear_right_wheel_link">
+          <slip_compliance_lateral>1.5</slip_compliance_lateral>
+          <slip_compliance_longitudinal>0.02</slip_compliance_longitudinal>
+          <wheel_normal_force>250</wheel_normal_force>
+          <wheel_radius>${wheel_radius}</wheel_radius>
+        </wheel>
+      </plugin>
+
       <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
         <left_joint>${prefix}front_left_wheel_joint</left_joint>
         <left_joint>${prefix}rear_left_wheel_joint</left_joint>
@@ -235,6 +334,14 @@
         <right_joint>${prefix}rear_right_wheel_joint</right_joint>
         <wheel_separation>${wheel_separation}</wheel_separation>
         <wheel_radius>${wheel_radius}</wheel_radius>
+        <max_linear_acceleration>8.0</max_linear_acceleration>
+        <min_linear_acceleration>-8.0</min_linear_acceleration>
+        <max_angular_acceleration>8.0</max_angular_acceleration>
+        <min_angular_acceleration>-8.0</min_angular_acceleration>
+        <max_linear_velocity>5.0</max_linear_velocity>
+        <min_linear_velocity>-2.0</min_linear_velocity>
+        <max_angular_velocity>5.0</max_angular_velocity>
+        <min_angular_velocity>-5.0</min_angular_velocity>
         <odom_publish_frequency>50</odom_publish_frequency>
         <topic>cmd_vel</topic>
         <odom_topic>odom</odom_topic>
