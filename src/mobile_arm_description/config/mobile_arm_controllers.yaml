@@ -1,0 +1,41 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+    gripper_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+arm_position_controller:
+  ros__parameters:
+    joints:
+      - arm_shoulder_pan_joint
+      - arm_shoulder_lift_joint
+      - arm_elbow_joint
+      - arm_wrist_1_joint
+      - arm_wrist_2_joint
+      - arm_wrist_3_joint
+
+    interface_name: position
+
+gripper_position_controller:
+  ros__parameters:
+    joints:
+      - arm_robotiq_palm_finger_1_joint
+      - arm_robotiq_finger_1_joint_1
+      - arm_robotiq_finger_1_joint_2
+      - arm_robotiq_finger_1_joint_3
+      - arm_robotiq_palm_finger_2_joint
+      - arm_robotiq_finger_2_joint_1
+      - arm_robotiq_finger_2_joint_2
+      - arm_robotiq_finger_2_joint_3
+      - arm_robotiq_finger_middle_joint_1
+      - arm_robotiq_finger_middle_joint_2
+      - arm_robotiq_finger_middle_joint_3
+
+    interface_name: position

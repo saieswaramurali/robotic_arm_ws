@@ -4,8 +4,17 @@ project(mobile_arm_description)
 find_package(ament_cmake REQUIRED)
 
 install(
-  DIRECTORY launch rviz urdf worlds
+  DIRECTORY config launch rviz urdf worlds
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    scripts/cmd_vel_limiter.py
+    scripts/hold_arm_pose.py
+    scripts/odom_speed_monitor.py
+    scripts/publish_wheel_joint_states.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

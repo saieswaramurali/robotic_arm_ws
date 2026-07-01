@@ -1,6 +1,7 @@
 # robotic_arm_ws
 
 ROS 2 workspace for a UR5e robot description package.
+![alt text](robot.png)
 
 The current workspace contains:
 
