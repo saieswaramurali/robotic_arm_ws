@@ -14,7 +14,7 @@ def generate_launch_description():
     controllers_file = LaunchConfiguration("controllers_file")
     gz_args = LaunchConfiguration("gz_args")
     name = LaunchConfiguration("name")
-    tf_prefix = LaunchConfiguration("tf_prefix")
+    arm_prefix = LaunchConfiguration("arm_prefix")
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
     safety_k_position = LaunchConfiguration("safety_k_position")
@@ -24,75 +24,48 @@ def generate_launch_description():
     roll = LaunchConfiguration("roll")
     pitch = LaunchConfiguration("pitch")
     yaw = LaunchConfiguration("yaw")
-    bridge_camera = LaunchConfiguration("bridge_camera")
+    launch_rviz = LaunchConfiguration("launch_rviz")
+    rviz_config_file = LaunchConfiguration("rviz_config_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
     use_trajectory_controllers = LaunchConfiguration("use_trajectory_controllers")
     use_sim_time_param = ParameterValue(use_sim_time, value_type=bool)
 
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            description_file,
-            " ",
-            "ur_type:=",
-            ur_type,
-            " ",
-            "name:=",
-            name,
-            " ",
-            "safety_limits:=",
-            safety_limits,
-            " ",
-            "safety_pos_margin:=",
-            safety_pos_margin,
-            " ",
-            "safety_k_position:=",
-            safety_k_position,
-            " ",
-            "tf_prefix:=",
-            tf_prefix,
-            " ",
-            "force_abs_paths:=true",
-            " ",
-            "controllers_file:=",
-            controllers_file,
-            " ",
-            "include_gz_camera_sensors:=true",
-        ]
-    )
-
-    control_robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            description_file,
-            " ",
-            "ur_type:=",
-            ur_type,
-            " ",
-            "name:=",
-            name,
-            " ",
-            "safety_limits:=",
-            safety_limits,
-            " ",
-            "safety_pos_margin:=",
-            safety_pos_margin,
-            " ",
-            "safety_k_position:=",
-            safety_k_position,
-            " ",
-            "tf_prefix:=",
-            tf_prefix,
-            " ",
-            "force_abs_paths:=true",
-            " ",
-            "controllers_file:=",
-            controllers_file,
-            " ",
-            "include_gz_camera_sensors:=false",
-        ]
+    robot_description_content = ParameterValue(
+        Command(
+            [
+                PathJoinSubstitution([FindExecutable(name="xacro")]),
+                " ",
+                description_file,
+                " ",
+                "ur_type:=",
+                ur_type,
+                " ",
+                "name:=",
+                name,
+                " ",
+                "arm_prefix:=",
+                arm_prefix,
+                " ",
+                "safety_limits:=",
+                safety_limits,
+                " ",
+                "safety_pos_margin:=",
+                safety_pos_margin,
+                " ",
+                "safety_k_position:=",
+                safety_k_position,
+                " ",
+                "force_abs_paths:=true",
+                " ",
+                "controllers_file:=",
+                controllers_file,
+                " ",
+                "use_ros2_control:=true",
+                " ",
+                "include_gz_camera_sensors:=false",
+            ]
+        ),
+        value_type=str,
     )
 
     robot_description = {"robot_description": robot_description_content}
@@ -132,6 +105,19 @@ def generate_launch_description():
         output="screen",
     )
 
+    bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
+            "/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist",
+            "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
+            "/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan",
+            "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
+        ],
+        output="screen",
+    )
+
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
@@ -142,11 +128,7 @@ def generate_launch_description():
     arm_controller_spawner_active = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "arm_controller",
-            "--controller-manager",
-            "/controller_manager",
-        ],
+        arguments=["arm_controller", "--controller-manager", "/controller_manager"],
         output="screen",
         condition=IfCondition(use_trajectory_controllers),
     )
@@ -154,11 +136,7 @@ def generate_launch_description():
     gripper_controller_spawner_active = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "gripper_controller",
-            "--controller-manager",
-            "/controller_manager",
-        ],
+        arguments=["gripper_controller", "--controller-manager", "/controller_manager"],
         output="screen",
         condition=IfCondition(use_trajectory_controllers),
     )
@@ -166,12 +144,7 @@ def generate_launch_description():
     arm_controller_spawner_inactive = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "arm_controller",
-            "--controller-manager",
-            "/controller_manager",
-            "--inactive",
-        ],
+        arguments=["arm_controller", "--controller-manager", "/controller_manager", "--inactive"],
         output="screen",
         condition=UnlessCondition(use_trajectory_controllers),
     )
@@ -179,12 +152,7 @@ def generate_launch_description():
     gripper_controller_spawner_inactive = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[
-            "gripper_controller",
-            "--controller-manager",
-            "/controller_manager",
-            "--inactive",
-        ],
+        arguments=["gripper_controller", "--controller-manager", "/controller_manager", "--inactive"],
         output="screen",
         condition=UnlessCondition(use_trajectory_controllers),
     )
@@ -202,83 +170,26 @@ def generate_launch_description():
         condition=UnlessCondition(use_trajectory_controllers),
     )
 
-    camera_bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
-        arguments=[
-            "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
-            "/wrist_camera/color@sensor_msgs/msg/Image[gz.msgs.Image",
-            "/wrist_camera/depth@sensor_msgs/msg/Image[gz.msgs.Image",
-            "/wrist_camera/depth/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked",
-        ],
-        remappings=[
-            ("/wrist_camera/color", "/wrist_camera/color/image"),
-            ("/wrist_camera/depth", "/wrist_camera/depth/image"),
-            ("/wrist_camera/depth/points", "/wrist_camera/depth/points"),
-        ],
-        output="screen",
-        condition=IfCondition(bridge_camera),
-    )
-
-    color_camera_info_bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
-        arguments=[
-            "/wrist_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
-        ],
-        remappings=[
-            ("/wrist_camera/camera_info", "/wrist_camera/color/camera_info"),
-        ],
-        output="screen",
-        condition=IfCondition(bridge_camera),
-    )
-
-    depth_camera_info_bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
-        arguments=[
-            "/wrist_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
-        ],
-        remappings=[
-            ("/wrist_camera/camera_info", "/wrist_camera/depth/camera_info"),
-        ],
-        output="screen",
-        condition=IfCondition(bridge_camera),
-    )
-
-    depth_points_frame_tf = Node(
-        package="tf2_ros",
-        executable="static_transform_publisher",
-        arguments=[
-            "--x",
-            "0",
-            "--y",
-            "0",
-            "--z",
-            "0",
-            "--roll",
-            "0",
-            "--pitch",
-            "0",
-            "--yaw",
-            "0",
-            "--frame-id",
-            "wrist_camera_depth_frame",
-            "--child-frame-id",
-            "ur/wrist_3_link/wrist_camera_depth_sensor",
-        ],
+    rviz = Node(
+        package="rviz2",
+        executable="rviz2",
+        arguments=["-d", rviz_config_file],
         parameters=[{"use_sim_time": use_sim_time_param}],
         output="screen",
-        condition=IfCondition(bridge_camera),
+        condition=IfCondition(launch_rviz),
     )
 
     gazebo_resource_path = [
+        PathJoinSubstitution([FindPackageShare("mobile_arm_description"), ".."]),
+        ":",
         PathJoinSubstitution([FindPackageShare("arm_description"), ".."]),
         ":",
         EnvironmentVariable("GZ_SIM_RESOURCE_PATH", default_value=""),
     ]
 
     ignition_resource_path = [
+        PathJoinSubstitution([FindPackageShare("mobile_arm_description"), ".."]),
+        ":",
         PathJoinSubstitution([FindPackageShare("arm_description"), ".."]),
         ":",
         EnvironmentVariable("IGN_GAZEBO_RESOURCE_PATH", default_value=""),
@@ -287,8 +198,8 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("ur_type", default_value="ur5e"),
-            DeclareLaunchArgument("name", default_value="ur"),
-            DeclareLaunchArgument("tf_prefix", default_value=""),
+            DeclareLaunchArgument("name", default_value="mobile_arm"),
+            DeclareLaunchArgument("arm_prefix", default_value="arm_"),
             DeclareLaunchArgument("safety_limits", default_value="true"),
             DeclareLaunchArgument("safety_pos_margin", default_value="0.15"),
             DeclareLaunchArgument("safety_k_position", default_value="20"),
@@ -298,25 +209,25 @@ def generate_launch_description():
             DeclareLaunchArgument("roll", default_value="0.0"),
             DeclareLaunchArgument("pitch", default_value="0.0"),
             DeclareLaunchArgument("yaw", default_value="0.0"),
+            DeclareLaunchArgument("launch_rviz", default_value="true"),
+            DeclareLaunchArgument("use_sim_time", default_value="true"),
+            DeclareLaunchArgument("use_trajectory_controllers", default_value="false"),
             DeclareLaunchArgument(
                 "gz_args",
                 default_value=[
                     "-r ",
                     PathJoinSubstitution(
-                        [FindPackageShare("arm_description"), "worlds", "arm_camera.sdf"]
+                        [FindPackageShare("mobile_arm_description"), "worlds", "empty.sdf"]
                     ),
                 ],
             ),
-            DeclareLaunchArgument("bridge_camera", default_value="true"),
-            DeclareLaunchArgument("use_sim_time", default_value="true"),
-            DeclareLaunchArgument("use_trajectory_controllers", default_value="false"),
             DeclareLaunchArgument(
                 "description_file",
                 default_value=PathJoinSubstitution(
                     [
-                        FindPackageShare("arm_description"),
+                        FindPackageShare("mobile_arm_description"),
                         "urdf",
-                        "ur_gz_controlled.urdf.xacro",
+                        "mobile_arm.urdf.xacro",
                     ]
                 ),
             ),
@@ -324,9 +235,19 @@ def generate_launch_description():
                 "controllers_file",
                 default_value=PathJoinSubstitution(
                     [
-                        FindPackageShare("arm_ros2_control"),
+                        FindPackageShare("mobile_arm_bringup"),
                         "config",
-                        "controllers.yaml",
+                        "mobile_arm_controllers.yaml",
+                    ]
+                ),
+            ),
+            DeclareLaunchArgument(
+                "rviz_config_file",
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare("arm_description"),
+                        "rviz",
+                        "view_robot.rviz",
                     ]
                 ),
             ),
@@ -336,19 +257,18 @@ def generate_launch_description():
             Node(
                 package="robot_state_publisher",
                 executable="robot_state_publisher",
-                parameters=[
-                    robot_description,
-                    {"use_sim_time": use_sim_time_param},
-                ],
+                parameters=[robot_description, {"use_sim_time": use_sim_time_param}],
                 output="screen",
             ),
             Node(
                 package="demo_nodes_cpp",
                 executable="parameter_blackboard",
                 name="robot_description_control_server",
-                parameters=[{"robot_description": control_robot_description_content}],
+                parameters=[robot_description],
                 output="screen",
             ),
+            bridge,
+            rviz,
             TimerAction(period=2.0, actions=[spawn_robot]),
             TimerAction(
                 period=5.0,
@@ -359,15 +279,6 @@ def generate_launch_description():
                     arm_controller_spawner_inactive,
                     gripper_controller_spawner_inactive,
                     position_controller_spawner,
-                ],
-            ),
-            TimerAction(
-                period=5.0,
-                actions=[
-                    camera_bridge,
-                    color_camera_info_bridge,
-                    depth_camera_info_bridge,
-                    depth_points_frame_tf,
                 ],
             ),
         ]

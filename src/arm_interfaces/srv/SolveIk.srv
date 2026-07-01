@@ -1,0 +1,7 @@
+geometry_msgs/PoseStamped target_pose
+float64[] seed
+---
+bool success
+string message
+float64[] joints
+geometry_msgs/PoseStamped solved_pose

@@ -1,0 +1,9 @@
+geometry_msgs/PoseStamped target_pose
+float64 duration
+float64[] seed
+bool execute
+---
+bool success
+string message
+float64[] joints
+trajectory_msgs/JointTrajectory trajectory

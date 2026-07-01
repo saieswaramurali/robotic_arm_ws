@@ -7,6 +7,9 @@ The current workspace contains:
 - `src/arm_description`: UR5e Xacro/URDF description, Webots Robotiq 3F gripper, simple wrist RGB-D camera block, RViz config, and launch files for RViz and Gazebo Sim.
 - `src/arm_ros2_control`: ROS 2 controller configuration.
 - `src/arm_bringup`: Gazebo Sim launch orchestration for the controlled arm.
+- `src/arm_interfaces`: Custom service interfaces for FK, IK, and move-to-pose calls.
+- `src/arm_kinematics`: KDL-based FK, IK, and trajectory planning service node.
+- `src/arm_pick_place`: Predefined pick-and-place task logic for a known cylinder pose.
 
 ## What Works Now
 
@@ -17,6 +20,7 @@ The current workspace contains:
 - Control the UR5e arm and Webots Robotiq 3F gripper through direct position controllers by default.
 - Keep trajectory controllers available as inactive controllers for later switching.
 - Read simulated wrist-camera RGB, depth image, camera info, and depth point cloud topics from Gazebo Sim.
+- Call a KDL motion service to solve IK and publish a joint trajectory to move `tool0` in the `base_link` frame.
 
 This workspace does not currently include a real hardware interface, MuJoCo scene, or pick-and-place demo.
 
@@ -36,12 +40,14 @@ The launch files expect a ROS 2 Humble environment with these packages available
 - `gz_ros2_control`
 - `forward_command_controller`
 - `tf2_ros`
+- `orocos_kdl`
+- `kdl_parser`
 
 ## Build
 
 ```bash
 cd ~/Desktop/ros_ws/robotic_arm_ws
-colcon build --packages-select arm_description arm_ros2_control arm_bringup
+colcon build --packages-select arm_description arm_ros2_control arm_interfaces arm_kinematics arm_pick_place arm_bringup
 source install/setup.bash
 ```
 
@@ -147,6 +153,59 @@ Switch back to direct position controllers:
 ros2 control switch_controllers \
   --deactivate arm_controller gripper_controller \
   --activate arm_position_controller gripper_position_controller
+```
+
+## KDL Motion Pipeline
+
+Start Gazebo ROS 2 control with the trajectory controller and KDL planner:
+
+```bash
+ros2 launch arm_bringup kinematics_control.launch.py
+```
+
+This launch starts Gazebo, activates:
+
+```text
+joint_state_broadcaster
+arm_controller
+gripper_controller
+```
+
+and leaves the direct position controllers inactive. The KDL node subscribes to `/joint_states`, publishes FK on `/end_effector_pose`, and publishes planned trajectories to `/arm_controller/joint_trajectory`.
+
+Move the end effector, where the pose is expressed in `base_link`:
+
+```bash
+ros2 service call /move_to_pose arm_interfaces/srv/MoveToPose \
+  "{target_pose: {header: {frame_id: 'base_link'}, pose: {position: {x: 0.35, y: 0.10, z: 0.45}, orientation: {x: 0.0, y: 0.0, z: 0.0, w: 1.0}}}, duration: 4.0, seed: [], execute: true}"
+```
+
+Useful services:
+
+```text
+/compute_fk
+/solve_ik
+/move_to_pose
+```
+
+## Predefined Cylinder Pick And Place
+
+Launch Gazebo, the KDL motion pipeline, a cylinder object, and the fixed pick-place task:
+
+```bash
+ros2 launch arm_bringup pick_place_cylinder.launch.py
+```
+
+The cylinder starts at:
+
+```text
+x=0.38 y=0.18 z=0.06
+```
+
+The demo keeps a downward tool orientation, descends closer to the cylinder, closes the gripper, lifts, moves slightly to the robot's right side, descends near the table, opens the gripper, and retreats. To spawn the object without running the task:
+
+```bash
+ros2 launch arm_bringup pick_place_cylinder.launch.py run_demo:=false
 ```
 
 View the simulated wrist camera:
