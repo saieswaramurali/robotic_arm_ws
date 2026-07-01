@@ -11,6 +11,7 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     ur_type = LaunchConfiguration("ur_type")
     description_file = LaunchConfiguration("description_file")
+    controllers_file = LaunchConfiguration("controllers_file")
     gz_args = LaunchConfiguration("gz_args")
     name = LaunchConfiguration("name")
     arm_prefix = LaunchConfiguration("arm_prefix")
@@ -26,6 +27,11 @@ def generate_launch_description():
     launch_rviz = LaunchConfiguration("launch_rviz")
     rviz_config_file = LaunchConfiguration("rviz_config_file")
     use_sim_time = LaunchConfiguration("use_sim_time")
+    max_linear_velocity = LaunchConfiguration("max_linear_velocity")
+    max_angular_velocity = LaunchConfiguration("max_angular_velocity")
+    max_linear_acceleration = LaunchConfiguration("max_linear_acceleration")
+    max_angular_acceleration = LaunchConfiguration("max_angular_acceleration")
+    cmd_vel_timeout = LaunchConfiguration("cmd_vel_timeout")
     use_sim_time_param = ParameterValue(use_sim_time, value_type=bool)
 
     robot_description_content = ParameterValue(
@@ -54,32 +60,34 @@ def generate_launch_description():
                 safety_k_position,
                 " ",
                 "force_abs_paths:=true",
+                " ",
+                "controllers_file:=",
+                controllers_file,
+                " ",
+                "use_ros2_control:=true",
+                " ",
+                "include_gz_camera_sensors:=false",
             ]
         ),
         value_type=str,
     )
+    robot_description = {"robot_description": robot_description_content}
 
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
         parameters=[
-            {
-                "robot_description": robot_description_content,
-                "use_sim_time": use_sim_time_param,
-            }
+            robot_description,
+            {"use_sim_time": use_sim_time_param},
         ],
         output="screen",
     )
 
-    joint_state_publisher = Node(
-        package="joint_state_publisher",
-        executable="joint_state_publisher",
-        parameters=[
-            {
-                "robot_description": robot_description_content,
-                "use_sim_time": use_sim_time_param,
-            }
-        ],
+    robot_description_control_server = Node(
+        package="demo_nodes_cpp",
+        executable="parameter_blackboard",
+        name="robot_description_control_server",
+        parameters=[robot_description],
         output="screen",
     )
 
@@ -127,7 +135,60 @@ def generate_launch_description():
             "/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry",
             "/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V",
         ],
+        remappings=[("/cmd_vel", "/cmd_vel_limited")],
         output="screen",
+    )
+
+    cmd_vel_limiter = Node(
+        package="mobile_arm_description",
+        executable="cmd_vel_limiter.py",
+        name="cmd_vel_limiter",
+        output="screen",
+        parameters=[
+            {
+                "use_sim_time": use_sim_time_param,
+                "max_linear_velocity": max_linear_velocity,
+                "max_angular_velocity": max_angular_velocity,
+                "max_linear_acceleration": max_linear_acceleration,
+                "max_angular_acceleration": max_angular_acceleration,
+                "cmd_timeout": cmd_vel_timeout,
+            }
+        ],
+    )
+
+    joint_state_broadcaster_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        output="screen",
+    )
+
+    position_controller_spawner = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "arm_position_controller",
+            "gripper_position_controller",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+        output="screen",
+    )
+
+    hold_arm_pose = Node(
+        package="mobile_arm_description",
+        executable="hold_arm_pose.py",
+        name="hold_arm_pose",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time_param}],
+    )
+
+    wheel_joint_state_publisher = Node(
+        package="mobile_arm_description",
+        executable="publish_wheel_joint_states.py",
+        name="wheel_joint_state_publisher",
+        output="screen",
+        parameters=[{"use_sim_time": use_sim_time_param}],
     )
 
     rviz = Node(
@@ -171,6 +232,11 @@ def generate_launch_description():
             DeclareLaunchArgument("yaw", default_value="0.0"),
             DeclareLaunchArgument("launch_rviz", default_value="true"),
             DeclareLaunchArgument("use_sim_time", default_value="true"),
+            DeclareLaunchArgument("max_linear_velocity", default_value="0.8"),
+            DeclareLaunchArgument("max_angular_velocity", default_value="0.8"),
+            DeclareLaunchArgument("max_linear_acceleration", default_value="10.0"),
+            DeclareLaunchArgument("max_angular_acceleration", default_value="10.0"),
+            DeclareLaunchArgument("cmd_vel_timeout", default_value="2.0"),
             DeclareLaunchArgument(
                 "gz_args",
                 default_value=[
@@ -191,6 +257,16 @@ def generate_launch_description():
                 ),
             ),
             DeclareLaunchArgument(
+                "controllers_file",
+                default_value=PathJoinSubstitution(
+                    [
+                        FindPackageShare("mobile_arm_description"),
+                        "config",
+                        "mobile_arm_controllers.yaml",
+                    ]
+                ),
+            ),
+            DeclareLaunchArgument(
                 "rviz_config_file",
                 default_value=PathJoinSubstitution(
                     [
@@ -204,9 +280,19 @@ def generate_launch_description():
             SetEnvironmentVariable("IGN_GAZEBO_RESOURCE_PATH", ignition_resource_path),
             gz_sim,
             robot_state_publisher,
-            joint_state_publisher,
+            robot_description_control_server,
+            wheel_joint_state_publisher,
+            cmd_vel_limiter,
             gz_bridge,
             rviz,
             TimerAction(period=2.0, actions=[spawn_robot]),
+            TimerAction(
+                period=3.5,
+                actions=[
+                    joint_state_broadcaster_spawner,
+                    position_controller_spawner,
+                ],
+            ),
+            TimerAction(period=4.5, actions=[hold_arm_pose]),
         ]
     )
